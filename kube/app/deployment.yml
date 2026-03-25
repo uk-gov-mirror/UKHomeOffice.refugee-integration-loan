@@ -14,10 +14,10 @@ metadata:
   name: {{ .APP_NAME }}
   {{ end }}
 spec:
-  {{ if or (eq .KUBE_NAMESPACE .STG_ENV) (eq .KUBE_NAMESPACE .PROD_ENV) }}
-  replicas: 2
+  {{ if eq .KUBE_NAMESPACE .PROD_ENV }}
+  replicas: 4
   {{ else }}
-  replicas: 1
+  replicas: 2
   {{ end }}
   selector:
     matchLabels:
