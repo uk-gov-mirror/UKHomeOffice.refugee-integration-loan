@@ -35,6 +35,12 @@ fi
 export KUBE_NAMESPACE=$1
 export DRONE_SOURCE_BRANCH=$(echo $DRONE_SOURCE_BRANCH | tr '[:upper:]' '[:lower:]' | tr '/' '-')
 
+if [[ ${KUBE_NAMESPACE} == ${PROD_ENV} ]]; then
+  export REDIS_PERSISTENCE_SIZE=5Gi
+else
+  export REDIS_PERSISTENCE_SIZE=1Gi
+fi
+
 if [[ ${KUBE_NAMESPACE} == ${BRANCH_ENV} ]]; then
   $kd -f kube/configmaps -f kube/certs
   $kd -f $redis_storage_files
