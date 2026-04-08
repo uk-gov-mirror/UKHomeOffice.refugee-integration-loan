@@ -9,6 +9,11 @@ environment:
   STG_ENV: sas-ril-stg
   UAT_ENV: sas-ril-uat
   BRANCH_ENV: sas-ril-branch
+  REDIS_PERSISTENCE_ENABLED: "true"
+  REDIS_PERSISTENCE_ACCESS_MODES: ReadWriteOnce
+  REDIS_PERSISTENCE_STORAGE_CLASS: gp2-encrypted-eu-west-2b
+  REDIS_PERSISTENCE_EXISTING_CLAIM: ""
+  REDIS_PERSISTENCE_ANNOTATIONS_FILE: ""
   PRODUCTION_URL: www.apply-for-refugee-integration-loan.homeoffice.gov.uk
   IMAGE_URL: 340268328991.dkr.ecr.eu-west-2.amazonaws.com
   IMAGE_REPO: sas/refugee-integration-loans
@@ -47,7 +52,7 @@ unit_tests: &unit_tests
     - yarn run test:unit
 
 sonar_scanner: &sonar_scanner
-  pull: if-not-exists
+  pull: always
   image: quay.io/ukhomeofficedigital/sonar-scanner:latest
   commands:
     - sonar-scanner -Dproject.settings=./sonar-project.properties
