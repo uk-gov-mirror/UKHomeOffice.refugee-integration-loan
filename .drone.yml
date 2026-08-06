@@ -65,7 +65,7 @@ ui_integration_tests: &ui_integration_tests
     - yarn run test:ui-integration
 
 accessibility_tests: &accessibility_tests
-  image: node:20.19.0-bullseye
+  <<: *node_image
   resources:
       limits:
         cpu: 2000
