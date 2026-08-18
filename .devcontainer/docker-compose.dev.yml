@@ -38,7 +38,7 @@ services:
       - "6379:6379"
 
   html-pdf-converter:
-    image: quay.io/ukhomeofficedigital/html-pdf-converter:3.0.0@sha256:2f13eb3bc9d396f2685e22a66b40613a44dfd9956412fe2752477601bb33772c
+    image: quay.io/ukhomeofficedigital/html-pdf-converter:3.1.1@sha256:ac87462085d39530158421d6c85111d18e4aa3df3ecf47368f589159da9277ad
     networks:
       - ril-shared-network
     hostname: hof-html-pdf-converter

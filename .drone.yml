@@ -37,7 +37,7 @@ trigger:
 
 node_image: &node_image
   pull: if-not-exists
-  image: quay.io/ukhomeofficedigital/hof-nodejs:20.20.2-alpine3.23@sha256:bcd17b68a0f1910f1670b07f6a47d1e2c28291bafc219807c494dc62b57ea25e
+  image: quay.io/ukhomeofficedigital/hof-nodejs:24.19.0-alpine3.24@sha256:a70b2f29d55a9aebcf89690e7f64f4889725dab87a3b22663d102ca17c5f888e
 
 linting: &linting
   <<: *node_image
@@ -61,18 +61,21 @@ ui_integration_tests: &ui_integration_tests
   <<: *node_image
   environment:
     NOTIFY_STUB: true
+    SESSION_SECRET:
+      from_secret: session_secret_for_tests
   commands:
     - yarn run test:ui-integration
 
 accessibility_tests: &accessibility_tests
-  image: node:20.19.0-bullseye
+  <<: *node_image
   resources:
       limits:
         cpu: 2000
         memory: 2048Mi
-  options: --user root
+  # options: --user root
   environment:
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+    PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser
     NOTIFY_STUB: true
     ENVIRONMENT: DRONE
     DRONE_DEBUG: true
@@ -84,27 +87,20 @@ accessibility_tests: &accessibility_tests
       from_secret: drone_server
     DRONE_TOKEN:
       from_secret: drone_token
+    SESSION_SECRET:
+      from_secret: session_secret_for_tests
   volumes:
     - name: dockersock
       path: /root/.dockersock
   commands:
-    - apt-get update
-    - apt-get install curl gnupg -y
-    - curl --location --silent https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-    - sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
-    - apt-get update
-    - apt-get install -y gnutls-bin binutils nodejs npm libjpeg62-turbo libcurl4 libx11-6 libxml2 chromium
-    - apt-get install google-chrome-stable -y --no-install-recommends
-    - rm -rf /var/lib/apt/lists/*
-    - yarn install
-    - yarn add puppeteer
-    - yarn add pa11y
-    - which google-chrome-stable
+    - apk add --no-cache chromium
+    - test -x "$PUPPETEER_EXECUTABLE_PATH"
+    - yarn install --frozen-lockfile
     - yarn run test:accessibility
 
 acceptance_tests: &acceptance_tests
   pull: if-not-exists
-  image: mcr.microsoft.com/playwright:v1.48.2-focal-amd64
+  image: mcr.microsoft.com/playwright:v1.62.0
 
 steps:
   - name: clone_repos
@@ -116,6 +112,7 @@ steps:
         from_secret: drone_git_token
     commands:
       - git clone https://$${DRONE_GIT_USERNAME}:$${DRONE_GIT_TOKEN}@github.com/UKHomeOfficeForms/hof-services-config.git
+      - find hof-services-config/* | grep -v $HOF_CONFIG | grep -v 'infrastructure' | xargs rm -rf
     when:
       branch:
         include:
@@ -223,8 +220,8 @@ steps:
         cpu: 1000
         memory: 1024Mi
     environment:
-      IMAGE_NAME: quay.io/ukhomeofficedigital/hof-nodejs:20.20.2-alpine3.23@sha256:bcd17b68a0f1910f1670b07f6a47d1e2c28291bafc219807c494dc62b57ea25e
-      SEVERITY: MEDIUM,HIGH,CRITICAL --dependency-tree
+      IMAGE_NAME: quay.io/ukhomeofficedigital/hof-nodejs:24.19.0-alpine3.24@sha256:a70b2f29d55a9aebcf89690e7f64f4889725dab87a3b22663d102ca17c5f888e
+      SEVERITY: MEDIUM,HIGH,CRITICAL --pkg-types os,library --dependency-tree
       FAIL_ON_DETECTION: false
       IGNORE_UNFIXED: true
       ALLOW_CVE_LIST_FILE: hof-services-config/infrastructure/trivy/.trivyignore.yaml
@@ -247,7 +244,7 @@ steps:
         memory: 1024Mi
     environment:
       IMAGE_NAME: sas/refugee-integration-loans:${DRONE_COMMIT_SHA}
-      SEVERITY: MEDIUM,HIGH,CRITICAL  --dependency-tree --format table
+      SEVERITY: MEDIUM,HIGH,CRITICAL  --pkg-types os,library --dependency-tree
       FAIL_ON_DETECTION: false
       IGNORE_UNFIXED: false
       ALLOW_CVE_LIST_FILE: hof-services-config/infrastructure/trivy/.trivyignore.yaml
@@ -403,6 +400,7 @@ steps:
         from_secret: drone_git_token
     commands:
       - git clone https://$${DRONE_GIT_USERNAME}:$${DRONE_GIT_TOKEN}@github.com/UKHomeOfficeForms/hof-services-config.git
+      - find hof-services-config/* | grep -v $HOF_CONFIG | grep -v 'infrastructure' | xargs rm -rf
     when:
       target: PROD
       event: promote
@@ -468,7 +466,7 @@ steps:
     image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/trivy/client:latest
     pull: always
     environment:
-        IMAGE_NAME: quay.io/ukhomeofficedigital/hof-nodejs:20.20.2-alpine3.23@sha256:bcd17b68a0f1910f1670b07f6a47d1e2c28291bafc219807c494dc62b57ea25e
+        IMAGE_NAME: quay.io/ukhomeofficedigital/hof-nodejs:24.19.0-alpine3.24@sha256:a70b2f29d55a9aebcf89690e7f64f4889725dab87a3b22663d102ca17c5f888e
         SEVERITY: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --dependency-tree
         FAIL_ON_DETECTION: true
         IGNORE_UNFIXED: false
@@ -483,7 +481,7 @@ steps:
     pull: always
     environment:
       IMAGE_NAME: sas/refugee-integration-loans:${DRONE_COMMIT_SHA}
-      SEVERITY: MEDIUM,HIGH,CRITICAL
+      SEVERITY: MEDIUM,HIGH,CRITICAL  --pkg-types os,library
       FAIL_ON_DETECTION: true
       IGNORE_UNFIXED: false
       ALLOW_CVE_LIST_FILE: hof-services-config/Refugee_Integration_Loan/trivy-cve-exceptions.txt

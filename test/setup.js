@@ -8,8 +8,8 @@ process.env.NOTIFY_KEY = 'UNIT_TEST';
 const reqres = require('hof').utils.reqres;
 
 global.chai = require('chai')
-  .use(require('sinon-chai'))
-  .use(require('chai-as-promised'))
+  .use(require('sinon-chai').default)
+  .use(require('chai-as-promised').default)
   .use(require('chai-subset'));
 global.should = chai.should();
 global.expect = chai.expect;
